@@ -2,7 +2,6 @@ type Board = [char; 10];
 
 fn main() {
     'game: loop {
-        let difficulty = 'h';
         let mut board: Board = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
         let mut free_pos = get_free_positions(&board);
         println!("How many players (1 or 2 or 0 to quit):\n");
@@ -28,7 +27,7 @@ fn main() {
         loop {
             println!("\"{turn}\" turn. Enter your position: \n");
             if turn == 'X' && players == 1 {
-                let comp_pos = get_comp_pos(&board, difficulty);
+                let comp_pos = get_comp_pos(&board);
                 println!("{comp_pos}");
                 board[comp_pos] = turn;
             } else {
@@ -98,62 +97,30 @@ fn get_winner(board: &Board) -> Option<char> {
 }
 
 /// get the computer's position
-fn get_comp_pos(board: &Board, difficulty: char) -> usize {
-    let mut free_pos = get_free_positions(board);
-    match difficulty {
-        'e' => {
-            let free_index: usize = fastrand::usize(..free_pos.len());
-            free_pos[free_index]
+fn get_comp_pos(board: &Board) -> usize {
+    let free_pos = get_free_positions(board);
+    let mut blocks = vec![];
+    for &pos in &free_pos {
+        let mut scenario = board.clone();
+        scenario[pos] = 'X';
+        if get_winner(&scenario).is_some() {
+            return pos;
         }
-        'm' => {
-            let mut blocks = vec![];
-            for _tries in 0..(free_pos.len() - 1) {
-                let index = fastrand::usize(..free_pos.len());
-                let pos = free_pos.swap_remove(index);
-                let mut scenario = board.clone();
-                scenario[pos] = 'X';
-                if get_winner(&scenario).is_some() {
-                    return pos;
-                }
-                scenario[pos] = 'O';
-                if get_winner(&scenario).is_some() {
-                    blocks.push(pos);
-                }
-            }
-            if !blocks.is_empty() {
-                let rand_index = fastrand::usize(..blocks.len());
-                blocks[rand_index]
-            } else {
-                let free_pos = get_free_positions(board);
-                let free_index: usize = fastrand::usize(..free_pos.len());
-                free_pos[free_index]
-            }
+        scenario[pos] = 'O';
+        if get_winner(&scenario).is_some() {
+            blocks.push(pos);
         }
-        'h' => {
-            let mut blocks = vec![];
-            for &pos in &free_pos {
-                let mut scenario = board.clone();
-                scenario[pos] = 'X';
-                if get_winner(&scenario).is_some() {
-                    return pos;
-                }
-                scenario[pos] = 'O';
-                if get_winner(&scenario).is_some() {
-                    blocks.push(pos);
-                }
-            }
-            if !blocks.is_empty() {
-                let rand_index = fastrand::usize(..blocks.len());
-                blocks[rand_index]
-            } else {
-                let free_index: usize = fastrand::usize(..free_pos.len());
-                free_pos[free_index]
-            }
-        }
-        _ => unreachable!()
+    }
+    if !blocks.is_empty() {
+        let rand_index = fastrand::usize(..blocks.len());
+        blocks[rand_index]
+    } else {
+        let free_index: usize = fastrand::usize(..free_pos.len());
+        free_pos[free_index]
     }
 }
 
+/// list of positions that result in in a win, 3 in a row.
 const IN_A_ROW_INDEX: [[usize; 3];8] = [
     [1, 2, 3],
     [4, 5, 6],
